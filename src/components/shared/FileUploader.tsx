@@ -4,7 +4,7 @@ import { Button } from '../ui/button'
 import { File } from 'buffer'
 
 type FileUploaderProps = {
-  fieldChange: (Files: File[]) => void;
+  fieldChange: (files: File[]) => void;
   mediaUrl: string;
 }
 
@@ -14,8 +14,8 @@ const FileUploader = ({ fieldChange, mediaUrl }: FileUploaderProps) => {
 
     const onDrop = useCallback(
       (acceptedFiles: FileWithPath[]) => {
-        setFile(acceptedFiles);
-        fieldChange(acceptedFiles);
+        setFile(acceptedFiles as unknown as File[]);
+        fieldChange(acceptedFiles as unknown as File[]);
         setFileUrl(URL.createObjectURL(acceptedFiles[0]));
       },
       [file]
