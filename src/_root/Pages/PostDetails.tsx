@@ -64,9 +64,15 @@ const PostDetails = () => {
                   className="w-8 h-8 lg:w-12 lg:h-12 rounded-full"
                 />
                 <div className="flex gap-1 flex-col">
+                {post?.creator.name === "Aman Shahid" ? (
+                  <p className="base-medium lg:body-bold text-amber-500">
+                    Aman Shahid (Dev)
+                  </p>) : (
                   <p className="base-medium lg:body-bold text-light-1">
                     {post?.creator.name}
                   </p>
+
+                  )}
                   <div className="flex-center gap-2 text-light-3">
                     <p className="subtle-semibold lg:small-regular ">
                       {multiFormatDateString(post?.$createdAt)}

@@ -240,8 +240,7 @@ export async function deletePost(postId?: string, imageId?: string) {
         postId
       );
       if (!statusCode) throw Error;
-      const statusFile = await deleteFile(imageId);
-      console.log(statusFile);
+      await deleteFile(imageId);
       return { status: "Ok" };
 
     } catch (error) {
