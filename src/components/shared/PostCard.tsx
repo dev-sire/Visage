@@ -32,10 +32,10 @@ const PostCard = ({ post }: PostCardProps) => {
 
           <div className="flex flex-col">
             {post.creator.name ==="Aman Shahid" ? (
-              <p className="base-medium lg:body-bold text-amber-500">
+              <p className="base-medium lg:body-bold text-admin-color">
                 {post.creator.name}{' '}(Dev)
               </p> ) : (
-              <p className="base-medium lg:body-bold text-light-1">
+              <p className="base-medium lg:body-bold text-white">
                 {post.creator.name}
               </p>
             )}

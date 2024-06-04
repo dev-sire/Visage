@@ -24,7 +24,7 @@ const FileUploader = ({ fieldChange, mediaUrl }: FileUploaderProps) => {
       'image/*' : ['.png', '.jpeg', '.jpg', '.svg'],
     }})
   return (
-      <div {...getRootProps()} className="flex flex-center flex-col bg-dark-3 rounded-xl cursor-pointer">
+      <div {...getRootProps()} className="flex flex-center flex-col bg-dark-2 rounded-xl cursor-pointer">
           <input {...getInputProps()} />
           {
               fileUrl ? (

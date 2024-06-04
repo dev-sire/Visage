@@ -12,8 +12,8 @@ const UserCard = ({ user }: UserCardProps) => {
       <img src={user.imageURL || "/assets/icons/profile-placeholder.svg"} alt="creator" className="rounded-full w-14 h-14" />
       <div className="flex-center flex-col gap-1">
         {user.name === "Aman Shahid" ? (
-              <p className="base-medium text-amber-500 text-center line-clamp-1">{user.name}{' '}(Dev)</p>) : (
-              <p className="base-medium text-light-1 text-center line-clamp-1">{user.name}</p>
+              <p className="base-medium text-admin-color text-center line-clamp-1">{user.name}{' '}(Dev)</p>) : (
+              <p className="base-medium text-white text-center line-clamp-1">{user.name}</p>
         )}
         <p className="small-regular text-light-3 text-center line-clamp-1"> @{user.username}</p>
       </div>

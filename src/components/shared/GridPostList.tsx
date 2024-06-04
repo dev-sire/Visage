@@ -40,7 +40,7 @@ const GridPostList = ({
                   className="w-8 h-8 rounded-full"
                 />
                 {post.creator.name === "Aman Shahid" ? (
-                    <p className="line-clamp-1 text-amber-500">Aman Shahid (Dev)</p>
+                    <p className="line-clamp-1 text-admin-color">Aman Shahid (Dev)</p>
                 ) : (
                     <p className="line-clamp-1">{post.creator.name}</p>
                 ) }

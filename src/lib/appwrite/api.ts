@@ -223,7 +223,7 @@ export function getFilePreview(fileId: string) {
 }
 export async function deleteFile(fileId: string) {
     try {
-        await storage.deleteFile(appwriteConfig.storageId, fileId);
+        await storage.deleteFile(appwriteConfig.storageId, fileId)
 
         return { status: "ok" };
     } catch (error) {
@@ -238,7 +238,7 @@ export async function deletePost(postId?: string, imageId?: string) {
         appwriteConfig.databaseId,
         appwriteConfig.postCollectionId,
         postId
-      );
+      )
       if (!statusCode) throw Error;
       await deleteFile(imageId);
       return { status: "Ok" };
@@ -246,8 +246,8 @@ export async function deletePost(postId?: string, imageId?: string) {
     } catch (error) {
       console.log(error);
     }
-  }
-  export async function getRecentPosts() {
+}
+export async function getRecentPosts() {
     try {
       const posts = await databases.listDocuments(
         appwriteConfig.databaseId,
@@ -261,7 +261,7 @@ export async function deletePost(postId?: string, imageId?: string) {
     } catch (error) {
       console.log(error);
     }
-  }
+}
 export async function likePost(postId: string, likesArray: string[]){
     try {
         const updatedPost = await databases.updateDocument(
