@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet';
 
 const OGImage = () => {
-    const ogImage = `${process.env.PUBLIC_URL}/ogImage.png`;
+    const ogImage = `https://visageshare.vercel.app/ogImage.png`;
 
     return (
         <Helmet>
