@@ -90,17 +90,17 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar {
-    width: 3px;
-    height: 3px;
-    border-radius: 2px;
+    width: 5px;
+    height: 5px;
+    border-radius: 3px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: #09090a;
+    background: #3C3D37;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #5c5c7b;
+    background: #ECDFCC;
     border-radius: 50px;
   }
 
