@@ -3,6 +3,26 @@ import { account, appwriteConfig, avatars, databases, storage } from "./config";
 import { AppwriteException, ID, ImageGravity, Models, Query } from "appwrite";
 
 // ============================================================
+// RELATIONSHIPS
+// ============================================================
+// Since Appwrite 2.0, listDocuments/getDocument return NO related documents
+// unless the request has a Query.select asking for them (and many-to-many
+// attributes such as `likes` are missing entirely). "*" selects the document's
+// own fields; "relation.*" expands that relationship. Appwrite resolves at most
+// 3 levels, so keep these paths shallow.
+
+/** Posts shown as cards/grids: author + likes (PostCard, PostStats, GridPostList). */
+const POST_SELECT = [Query.select(["*", "creator.*", "likes.*"])];
+
+/** Another user's profile page: their posts, each with likes for the stats row. */
+const USER_PROFILE_SELECT = [Query.select(["*", "posts.*", "posts.likes.*"])];
+
+/** The signed-in user's saved and liked posts. */
+const CURRENT_USER_SELECT = [
+    Query.select(["*", "save.*", "save.post.*", "liked.*", "liked.creator.*"]),
+];
+
+// ============================================================
 // ERRORS
 // ============================================================
 
@@ -86,27 +106,24 @@ export async function signInAccount(user: { email: string; password: string }) {
     }
 }
 
-/**
- * Resolves the signed-in user's profile document. Throws AuthStageError so the
- * caller can tell a missing session apart from a missing profile.
- */
-export async function getCurrentUser(): Promise<Models.DefaultDocument> {
-    let currentAccount: Models.User<Models.Preferences>;
-
+async function getCurrentAccountId(): Promise<string> {
     try {
-        currentAccount = await account.get();
+        const currentAccount = await account.get();
+        return currentAccount.$id;
     } catch (error) {
         if (error instanceof AppwriteException && error.code === 401) {
             throw new AuthStageError("no-session", error.message);
         }
         throw new AuthStageError("error", errorMessage(error));
     }
+}
 
+async function findProfile(accountId: string, queries: string[] = []) {
     try {
         const result = await databases.listDocuments({
             databaseId: appwriteConfig.databaseId,
             collectionId: appwriteConfig.userCollectionId,
-            queries: [Query.equal("accountId", currentAccount.$id)],
+            queries: [Query.equal("accountId", accountId), ...queries],
         });
 
         const profile = result.documents[0];
@@ -122,6 +139,20 @@ export async function getCurrentUser(): Promise<Models.DefaultDocument> {
         if (error instanceof AuthStageError) throw error;
         throw new AuthStageError("error", errorMessage(error));
     }
+}
+
+/**
+ * Resolves the signed-in user's profile document (own fields only). Used for
+ * the sign-in check. Throws AuthStageError so the caller can tell a missing
+ * session apart from a missing profile.
+ */
+export async function getCurrentUser(): Promise<Models.DefaultDocument> {
+    return findProfile(await getCurrentAccountId());
+}
+
+/** Same, plus saved/liked posts expanded. Used by the Saved/Liked pages and PostStats. */
+export async function getCurrentUserWithRelations(): Promise<Models.DefaultDocument> {
+    return findProfile(await getCurrentAccountId(), CURRENT_USER_SELECT);
 }
 
 export async function signOutAccount() {
@@ -299,7 +330,7 @@ export async function getRecentPosts() {
     return databases.listDocuments({
         databaseId: appwriteConfig.databaseId,
         collectionId: appwriteConfig.postCollectionId,
-        queries: [Query.orderDesc("$createdAt"), Query.limit(20)],
+        queries: [Query.orderDesc("$createdAt"), Query.limit(20), ...POST_SELECT],
     });
 }
 
@@ -362,11 +393,12 @@ export async function getPostById(postId?: string) {
         databaseId: appwriteConfig.databaseId,
         collectionId: appwriteConfig.postCollectionId,
         documentId: postId,
+        queries: POST_SELECT,
     });
 }
 
 export async function getInfinitePosts({ pageParam }: { pageParam: number }) {
-    const queries: string[] = [Query.orderDesc("$updatedAt"), Query.limit(9)];
+    const queries: string[] = [Query.orderDesc("$updatedAt"), Query.limit(9), ...POST_SELECT];
 
     if (pageParam) {
         queries.push(Query.cursorAfter(pageParam.toString()));
@@ -383,7 +415,7 @@ export async function searchPosts(searchTerm: string) {
     return databases.listDocuments({
         databaseId: appwriteConfig.databaseId,
         collectionId: appwriteConfig.postCollectionId,
-        queries: [Query.search("caption", searchTerm)],
+        queries: [Query.search("caption", searchTerm), ...POST_SELECT],
     });
 }
 
@@ -411,7 +443,7 @@ export async function getUserPosts(userId?: string) {
     return databases.listDocuments({
         databaseId: appwriteConfig.databaseId,
         collectionId: appwriteConfig.postCollectionId,
-        queries: [Query.equal("creator", userId), Query.orderDesc("$createdAt")],
+        queries: [Query.equal("creator", userId), Query.orderDesc("$createdAt"), ...POST_SELECT],
     });
 }
 
@@ -420,6 +452,7 @@ export async function getUserById(userId: string) {
         databaseId: appwriteConfig.databaseId,
         collectionId: appwriteConfig.userCollectionId,
         documentId: userId,
+        queries: USER_PROFILE_SELECT,
     });
 }
 
