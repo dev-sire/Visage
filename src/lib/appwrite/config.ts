@@ -10,6 +10,16 @@ export const appwriteConfig = {
     saveCollectionId: import.meta.env.VITE_APPWRITE_SAVES_COLLECTION_ID,
 }
 
+// Fail loudly (once, at startup) if an env var didn't make it into the bundle.
+// Vite only exposes variables prefixed with VITE_, and they're baked in at
+// build time, so on Vercel they must be set in the project settings.
+const missing = Object.entries(appwriteConfig)
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+if (missing.length > 0) {
+    console.error(`[appwrite] Missing environment configuration for: ${missing.join(", ")}`);
+}
+
 export const client = new Client();
 
 client.setProject(appwriteConfig.projectId);

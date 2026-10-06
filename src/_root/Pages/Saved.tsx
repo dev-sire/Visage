@@ -7,7 +7,7 @@ const Saved = () => {
   const { data: currentUser } = useGetCurrentUser();
 
   const savePosts = currentUser?.save
-    .map((savePost: Models.Document) => ({
+    .map((savePost: Models.DefaultDocument) => ({
       ...savePost.post,
       creator: {
         imageURL: currentUser.imageURL,

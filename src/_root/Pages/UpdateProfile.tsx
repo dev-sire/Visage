@@ -31,7 +31,7 @@ const UpdateProfile = () => {
 
   // Queries
   const { data: currentUser } = useGetUserById(id || "");
-  const { mutateAsync: updateUser, isLoading: isLoadingUpdate } =
+  const { mutateAsync: updateUser, isPending: isLoadingUpdate } =
     useUpdateUser();
 
   if (!currentUser)
@@ -48,8 +48,8 @@ const UpdateProfile = () => {
       name: value.name,
       bio: value.bio,
       file: value.file,
-      imageURL: currentUser.imageUrl,
-      imageID: currentUser.imageId,
+      imageURL: currentUser.imageURL,
+      imageID: currentUser.imageID,
     });
 
     if (!updatedUser) {

@@ -19,7 +19,7 @@ const SigninForm = () => {
   const { checkAuthUser, isLoading: isUserLoading } = useUserContext();
 
   // Query
-  const { mutateAsync: signInAccount, isLoading: isSigningInUser } = useSignInAccount();
+  const { mutateAsync: signInAccount, isPending: isSigningInUser } = useSignInAccount();
 
   const form = useForm<z.infer<typeof SigninValidation>>({
     resolver: zodResolver(SigninValidation),
@@ -30,24 +30,41 @@ const SigninForm = () => {
   });
 
   const handleSignin = async (user: z.infer<typeof SigninValidation>) => {
-    const session = await signInAccount(user);
+    try {
+      const session = await signInAccount(user);
+      if (!session) throw new Error("Sign in failed. Check your credentials.");
 
-    if (!session) {
-      toast({ title: "Login failed. Please try again." });
-      
-      return;
-    }
+      const result = await checkAuthUser();
+      if (!result.ok) {
+        if (result.reason === "no-session") {
+          // Appwrite accepted the login but then saw this browser as a guest, so
+          // the session credential didn't travel with the next request. Across
+          // sites (e.g. localhost -> *.cloud.appwrite.io) the SDK falls back to
+          // an `X-Fallback-Cookies` value kept in localStorage; log whether it exists.
+          const fallback = localStorage.getItem("cookieFallback");
+          console.warn(
+            "[auth] Session was created but account.get() was rejected as guest (401).",
+            {
+              cookieFallbackStored: !!fallback && fallback !== "[]",
+              detail: result.message,
+            }
+          );
+          throw new Error("Signed in, but the session wasn't accepted. Please try again.");
+        }
 
-    const isLoggedIn = await checkAuthUser();
+        if (result.reason === "no-profile") {
+          throw new Error("Signed in, but no profile exists for this account.");
+        }
 
-    if (isLoggedIn) {
+        throw new Error(`Signed in, but couldn't load your profile: ${result.message}`);
+      }
+
       form.reset();
-
       navigate("/");
-    } else {
-      toast({ title: "Login failed. Please try again.", });
-      
-      return;
+    } catch (error) {
+      toast({
+        title: error instanceof Error ? error.message : "Login failed. Please try again.",
+      });
     }
   };
 

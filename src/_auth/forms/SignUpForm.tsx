@@ -29,8 +29,8 @@ const SignupForm = () => {
   });
 
   // Queries
-  const { mutateAsync: createUserAccount, isLoading: isCreatingAccount } = useCreateUserAccount();
-  const { mutateAsync: signInAccount, isLoading: isSigningInUser } = useSignInAccount();
+  const { mutateAsync: createUserAccount, isPending: isCreatingAccount } = useCreateUserAccount();
+  const { mutateAsync: signInAccount, isPending: isSigningInUser } = useSignInAccount();
 
   // Handler
   const handleSignup = async (user: z.infer<typeof SignupValidation>) => {
@@ -56,19 +56,22 @@ const SignupForm = () => {
         return;
       }
 
-      const isLoggedIn = await checkAuthUser();
+      const result = await checkAuthUser();
 
-      if (isLoggedIn) {
+      if (result.ok) {
         form.reset();
 
-        navigate("/sign-in");
+        navigate("/");
       } else {
-        toast({ title: "Login failed. Please try again.", });
-        
+        toast({ title: `Login failed: ${result.message}`, });
+
         return;
       }
     } catch (error) {
       console.log({ error });
+      toast({
+        title: error instanceof Error ? error.message : "Sign up failed. Please try again.",
+      });
     }
   };
 

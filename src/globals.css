@@ -1,280 +1,404 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+@import "tw-animate-css";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+/* Colors */
+--color-primary-500: #8e5915;
+--color-primary-600: #5d5fef;
+--color-secondary-500: #ffb620;
+--color-off-white: #d0dfff;
+--color-red: #ff5a5a;
+
+--color-dark-1: #1e201e;
+--color-dark-2: #3c3d37;
+--color-dark-3: #a4b5c4;
+--color-dark-4: #1f1f22;
+
+--color-light-1: #d3af85;
+--color-light-2: #efefef;
+--color-light-3: #ecdfcc;
+--color-light-4: #e59312;
+
+--color-admin-color: #f4b315;
+
+/* Font */
+--font-inter: "Inter", sans-serif;
+
+/* Breakpoints */
+--breakpoint-xs: 480px;
+
+/* Custom widths */
+--width-420: 420px;
+--width-465: 465px;
+
+/* Animations */
+--animate-accordion-down: accordion-down 0.2s ease-out;
+--animate-accordion-up: accordion-up 0.2s ease-out;
+
+@keyframes accordion-down {
+from {
+height: 0;
+}
+
+to {
+  height: var(--radix-accordion-content-height);
+}
+
+}
+
+@keyframes accordion-up {
+from {
+height: var(--radix-accordion-content-height);
+}
+
+to {
+  height: 0;
+}
+
+}
+}
+
+/* ============================================================
+BASE
+============================================================ */
 
 @layer base {
-  * {
-    @apply box-border list-none p-0 m-0 scroll-smooth;
+
+* {
+  @apply box-border m-0 list-none scroll-smooth p-0;
   }
 
-  body {
-    @apply bg-dark-1 text-white min-h-screen font-inter;
-  }
+body {
+@apply min-h-screen bg-dark-1 font-inter text-white;
+}
 }
 
-@layer utilities {
-  /* TYPOGRAPHY */
-  .h1-bold {
-    @apply text-[36px] font-bold leading-[140%] tracking-tighter;
-  }
+/* ============================================================
+CUSTOM TYPOGRAPHY UTILITIES
+Tailwind CSS v4 uses @utility for custom utilities.
+============================================================ */
 
-  .h1-semibold {
-    @apply text-[36px] font-semibold leading-[140%] tracking-tighter;
-  }
-
-  .h2-bold {
-    @apply text-[30px] font-bold leading-[140%] tracking-tighter;
-  }
-
-  .h3-bold {
-    @apply text-[24px] font-bold leading-[140%] tracking-tighter;
-  }
-
-  .base-semibold {
-    @apply text-[16px] font-semibold leading-[140%] tracking-tighter;
-  }
-
-  .base-medium {
-    @apply text-[16px] font-medium leading-[140%];
-  }
-
-  .base-regular {
-    @apply text-[16px] font-normal leading-[140%];
-  }
-
-  .body-bold {
-    @apply text-[18px] font-bold leading-[140%];
-  }
-
-  .body-medium {
-    @apply text-[18px] font-medium leading-[140%];
-  }
-
-  .small-semibold {
-    @apply text-[14px] font-semibold leading-[140%] tracking-tighter;
-  }
-
-  .small-medium {
-    @apply text-[14px] font-medium leading-[140%];
-  }
-
-  .small-regular {
-    @apply text-[14px] font-normal leading-[140%];
-  }
-
-  .subtle-semibold {
-    @apply text-[12px] font-semibold leading-[140%];
-  }
-
-  .tiny-medium {
-    @apply text-[10px] font-medium leading-[140%];
-  }
-
-  /* UTILITIES */
-  .invert-white {
-    @apply invert brightness-0 transition;
-  }
-
-  .flex-center {
-    @apply flex justify-center items-center;
-  }
-
-  .flex-between {
-    @apply flex justify-between items-center;
-  }
-
-  .flex-start {
-    @apply flex justify-start items-center;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
-    border-radius: 3px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #3C3D37;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #ECDFCC;
-    border-radius: 50px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #7878a3;
-  }
-
-  .common-container {
-    @apply flex flex-col flex-1 items-center gap-10 overflow-scroll py-10 px-5 md:px-8 lg:p-14 custom-scrollbar;
-  }
-
-  /* All Users */
-  .user-container {
-    @apply max-w-5xl flex flex-col items-start w-full gap-6 md:gap-9;
-  }
-
-  .user-grid {
-    @apply w-full grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-7 max-w-5xl;
-  }
-
-  /* Explore */
-  .explore-container {
-    @apply flex flex-col flex-1 items-center overflow-scroll py-10 px-5 md:p-14 custom-scrollbar;
-  }
-
-  .explore-inner_container {
-    @apply max-w-5xl flex flex-col items-center w-full gap-6 md:gap-9;
-  }
-
-  .explore-search {
-    @apply h-12 bg-dark-2 border-none placeholder:text-dark-3 focus-visible:ring-0 focus-visible:ring-offset-0 ring-offset-0 !important;
-  }
-
-  /* Home */
-  .home-container {
-    @apply flex flex-col flex-1 items-center gap-10 overflow-scroll py-10 px-5 md:px-8 lg:p-14 custom-scrollbar;
-  }
-
-  .home-posts {
-    @apply max-w-screen-sm flex flex-col items-center w-full gap-6 md:gap-9;
-  }
-
-  .home-creators {
-    @apply hidden xl:flex flex-col w-72 2xl:w-465 px-6 py-10 gap-10  overflow-scroll custom-scrollbar;
-  }
-
-  /* Post Details */
-  .post_details-container {
-    @apply flex flex-col flex-1 gap-10 overflow-scroll py-10 px-5 md:p-14 custom-scrollbar items-center;
-  }
-
-  .post_details-card {
-    @apply bg-dark-2 w-full max-w-5xl rounded-[30px] flex-col flex xl:flex-row border border-dark-4 xl:rounded-l-[24px];
-  }
-
-  .post_details-img {
-    @apply h-80 lg:h-[480px] xl:w-[48%] rounded-t-[30px] xl:rounded-l-[24px] xl:rounded-tr-none object-cover p-5 bg-dark-1;
-  }
-
-  .post_details-info {
-    @apply bg-dark-2 flex flex-col gap-5 lg:gap-7 flex-1 items-start p-8 rounded-[30px];
-  }
-
-  .post_details-delete_btn {
-    @apply p-0 flex gap-3 hover:bg-transparent hover:text-light-1  text-light-1 small-medium lg:base-medium;
-  }
-
-  /* Profile */
-  .profile-container {
-    @apply flex flex-col items-center flex-1 gap-10 overflow-scroll py-10 px-5 md:p-14 custom-scrollbar;
-  }
-
-  .profile-inner_container {
-    @apply flex items-center md:mb-8 xl:items-start gap-8 flex-col xl:flex-row relative max-w-5xl w-full;
-  }
-
-  .profile-tab {
-    @apply flex-center gap-3 py-4 w-48 bg-dark-2  transition flex-1 xl:flex-initial;
-  }
-
-  /* Saved */
-  .saved-container {
-    @apply flex flex-col flex-1 items-center gap-10 overflow-scroll py-10 px-5 md:p-14 custom-scrollbar;
-  }
-
-  /* Bottom bar */
-  .bottom-bar {
-    @apply z-50 flex-between w-full sticky bottom-0 rounded-t-[20px] bg-dark-2 px-5 py-4 md:hidden;
-  }
-
-  /* File uploader */
-  .file_uploader-img {
-    @apply h-80 lg:h-[480px] w-full rounded-[24px] object-cover object-top;
-  }
-
-  .file_uploader-label {
-    @apply text-light-4 text-center small-regular w-full p-4 border-t border-t-dark-4;
-  }
-
-  .file_uploader-box {
-    @apply flex-center flex-col p-7 h-80 lg:h-[612px];
-  }
-
-  /* Grid Post List */
-  .grid-container {
-    @apply w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-7 max-w-5xl;
-  }
-
-  .grid-post_link {
-    @apply flex rounded-[24px] border border-dark-4 overflow-hidden cursor-pointer w-full h-full;
-  }
-
-  .grid-post_user {
-    @apply absolute bottom-0 p-5 flex-between w-full bg-gradient-to-t from-dark-3 to-transparent rounded-b-[24px] gap-2;
-  }
-
-  /* Left sidebar */
-  .leftsidebar {
-    @apply hidden md:flex px-6 py-10 flex-col justify-between min-w-[270px] bg-dark-2;
-  }
-
-  .leftsidebar-link {
-    @apply rounded-lg base-medium hover:bg-primary-500 transition;
-  }
-
-  /* Post Card */
-  .post-card {
-    @apply bg-dark-2 rounded-3xl border border-dark-4 p-5 lg:p-7 w-full max-w-screen-sm;
-  }
-
-  .post-card_img {
-    @apply h-64 xs:h-[400px] lg:h-[450px] w-full rounded-[24px] object-cover mb-5;
-  }
-
-  /* Topbar */
-  .topbar {
-    @apply sticky top-0 z-50 md:hidden bg-dark-2 w-full;
-  }
-
-  /* User card */
-  .user-card {
-    @apply flex-center flex-col gap-4 border border-dark-2 rounded-[20px] px-5 py-8;
-  }
+@utility h1-bold {
+@apply text-[36px] font-bold leading-[140%] tracking-tighter;
 }
+
+@utility h1-semibold {
+@apply text-[36px] font-semibold leading-[140%] tracking-tighter;
+}
+
+@utility h2-bold {
+@apply text-[30px] font-bold leading-[140%] tracking-tighter;
+}
+
+@utility h3-bold {
+@apply text-[24px] font-bold leading-[140%] tracking-tighter;
+}
+
+@utility base-semibold {
+@apply text-[16px] font-semibold leading-[140%] tracking-tighter;
+}
+
+@utility base-medium {
+@apply text-[16px] font-medium leading-[140%];
+}
+
+@utility base-regular {
+@apply text-[16px] font-normal leading-[140%];
+}
+
+@utility body-bold {
+@apply text-[18px] font-bold leading-[140%];
+}
+
+@utility body-medium {
+@apply text-[18px] font-medium leading-[140%];
+}
+
+@utility small-semibold {
+@apply text-[14px] font-semibold leading-[140%] tracking-tighter;
+}
+
+@utility small-medium {
+@apply text-[14px] font-medium leading-[140%];
+}
+
+@utility small-regular {
+@apply text-[14px] font-normal leading-[140%];
+}
+
+@utility subtle-semibold {
+@apply text-[12px] font-semibold leading-[140%];
+}
+
+@utility tiny-medium {
+@apply text-[10px] font-medium leading-[140%];
+}
+
+/* ============================================================
+GENERAL UTILITIES
+============================================================ */
+
+@utility invert-white {
+@apply invert brightness-0 transition;
+}
+
+@utility flex-center {
+@apply flex items-center justify-center;
+}
+
+@utility flex-between {
+@apply flex items-center justify-between;
+}
+
+@utility flex-start {
+@apply flex items-center justify-start;
+}
+
+/* ============================================================
+CUSTOM SCROLLBAR
+============================================================ */
+
+@utility custom-scrollbar {
+scrollbar-width: thin;
+scrollbar-color: #ecdfcc #3c3d37;
+
+&::-webkit-scrollbar {
+width: 5px;
+height: 5px;
+border-radius: 3px;
+}
+
+&::-webkit-scrollbar-track {
+background: #3c3d37;
+}
+
+&::-webkit-scrollbar-thumb {
+background: #ecdfcc;
+border-radius: 50px;
+}
+
+&::-webkit-scrollbar-thumb:hover {
+background: #7878a3;
+}
+}
+
+/* ============================================================
+COMMON CONTAINER
+============================================================ */
+
+@utility common-container {
+@apply flex flex-1 flex-col items-center gap-10 overflow-scroll px-5 py-10 custom-scrollbar md:px-8 lg:p-14;
+}
+
+/* ============================================================
+ALL USERS
+============================================================ */
+
+@utility user-container {
+@apply flex w-full max-w-5xl flex-col items-start gap-6 md:gap-9;
+}
+
+@utility user-grid {
+@apply grid w-full max-w-5xl grid-cols-1 gap-7 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3;
+}
+
+/* ============================================================
+EXPLORE
+============================================================ */
+
+@utility explore-container {
+@apply flex flex-1 flex-col items-center overflow-scroll px-5 py-10 custom-scrollbar md:p-14;
+}
+
+@utility explore-inner_container {
+@apply flex w-full max-w-5xl flex-col items-center gap-6 md:gap-9;
+}
+
+@utility explore-search {
+@apply h-12 border-none bg-dark-2 placeholder:text-dark-3 ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0;
+}
+
+/* ============================================================
+HOME
+============================================================ */
+
+@utility home-container {
+@apply flex flex-1 flex-col items-center gap-10 overflow-scroll px-5 py-10 custom-scrollbar md:px-8 lg:p-14;
+}
+
+@utility home-posts {
+@apply flex w-full max-w-screen-sm flex-col items-center gap-6 md:gap-9;
+}
+
+@utility home-creators {
+@apply hidden w-72 flex-col gap-10 overflow-scroll px-6 py-10 custom-scrollbar xl:flex 2xl:w-465;
+}
+
+/* ============================================================
+POST DETAILS
+============================================================ */
+
+@utility post_details-container {
+@apply flex flex-1 flex-col items-center gap-10 overflow-scroll px-5 py-10 custom-scrollbar md:p-14;
+}
+
+@utility post_details-card {
+@apply flex w-full max-w-5xl flex-col rounded-[30px] border border-dark-4 bg-dark-2 xl:flex-row xl:rounded-l-[24px];
+}
+
+@utility post_details-img {
+@apply h-80 rounded-t-[30px] bg-dark-1 object-cover p-5 lg:h-[480px] xl:w-[48%] xl:rounded-l-[24px] xl:rounded-tr-none;
+}
+
+@utility post_details-info {
+@apply flex flex-1 flex-col items-start gap-5 rounded-[30px] bg-dark-2 p-8 lg:gap-7;
+}
+
+@utility post_details-delete_btn {
+@apply flex gap-3 p-0 text-light-1 hover:bg-transparent hover:text-light-1 small-medium lg:base-medium;
+}
+
+/* ============================================================
+PROFILE
+============================================================ */
+
+@utility profile-container {
+@apply flex flex-1 flex-col items-center gap-10 overflow-scroll px-5 py-10 custom-scrollbar md:p-14;
+}
+
+@utility profile-inner_container {
+@apply relative flex w-full max-w-5xl flex-col items-center gap-8 md:mb-8 xl:flex-row xl:items-start;
+}
+
+@utility profile-tab {
+@apply flex-center flex-1 gap-3 bg-dark-2 py-4 w-48 transition xl:flex-initial;
+}
+
+/* ============================================================
+SAVED
+============================================================ */
+
+@utility saved-container {
+@apply flex flex-1 flex-col items-center gap-10 overflow-scroll px-5 py-10 custom-scrollbar md:p-14;
+}
+
+/* ============================================================
+BOTTOM BAR
+============================================================ */
+
+@utility bottom-bar {
+@apply sticky bottom-0 z-50 flex w-full items-center justify-between rounded-t-[20px] bg-dark-2 px-5 py-4 md:hidden;
+}
+
+/* ============================================================
+FILE UPLOADER
+============================================================ */
+
+@utility file_uploader-img {
+@apply h-80 w-full rounded-[24px] object-cover object-top lg:h-[480px];
+}
+
+@utility file_uploader-label {
+@apply w-full border-t border-t-dark-4 p-4 text-center text-light-4 small-regular;
+}
+
+@utility file_uploader-box {
+@apply flex-center h-80 flex-col p-7 lg:h-[612px];
+}
+
+/* ============================================================
+GRID POST LIST
+============================================================ */
+
+@utility grid-container {
+@apply grid w-full max-w-5xl grid-cols-1 gap-7 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3;
+}
+
+@utility grid-post_link {
+@apply flex h-full w-full cursor-pointer overflow-hidden rounded-[24px] border border-dark-4;
+}
+
+@utility grid-post_user {
+@apply absolute bottom-0 flex w-full items-center justify-between gap-2 rounded-b-[24px] bg-gradient-to-t from-dark-3 to-transparent p-5;
+}
+
+/* ============================================================
+LEFT SIDEBAR
+============================================================ */
+
+@utility leftsidebar {
+@apply hidden min-w-[270px] flex-col justify-between bg-dark-2 px-6 py-10 md:flex;
+}
+
+@utility leftsidebar-link {
+@apply rounded-lg base-medium transition hover:bg-primary-500;
+}
+
+/* ============================================================
+POST CARD
+============================================================ */
+
+@utility post-card {
+@apply w-full max-w-screen-sm rounded-3xl border border-dark-4 bg-dark-2 p-5 lg:p-7;
+}
+
+@utility post-card_img {
+@apply mb-5 h-64 w-full rounded-[24px] object-cover xs:h-[400px] lg:h-[450px];
+}
+
+/* ============================================================
+TOPBAR
+============================================================ */
+
+@utility topbar {
+@apply sticky top-0 z-50 w-full bg-dark-2 md:hidden;
+}
+
+/* ============================================================
+USER CARD
+============================================================ */
+
+@utility user-card {
+@apply flex-center flex-col gap-4 rounded-[20px] border border-dark-2 px-5 py-8;
+}
+
+/* ============================================================
+SHADCN COMPONENTS
+============================================================ */
 
 @layer components {
-  /* SHADCN COMPONENTS */
-  /* Form */
-  .shad-form_label {
-    @apply text-white !important;
-  }
+/* Form */
 
-  .shad-form_message {
-    @apply text-red !important;
-  }
+.shad-form_label {
+@apply text-white;
+}
 
-  .shad-input {
-    @apply h-12 bg-dark-2 border-none placeholder:text-dark-3 focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-light-3 !important;
-  }
+.shad-form_message {
+@apply text-red;
+}
 
-  .shad-textarea {
-    @apply h-36 bg-dark-2 rounded-xl border-none focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-light-3 !important;
-  }
+.shad-input {
+@apply h-12 border-none bg-dark-2 placeholder:text-dark-3 ring-offset-light-3 focus-visible:ring-1 focus-visible:ring-offset-1;
+}
 
-  /* Button */
-  .shad-button_primary {
-    @apply bg-primary-500 hover:bg-primary-500 text-white flex gap-2 !important;
-  }
+.shad-textarea {
+@apply h-36 rounded-xl border-none bg-dark-2 ring-offset-light-3 focus-visible:ring-1 focus-visible:ring-offset-1;
+}
 
-  .shad-button_dark_4 {
-    @apply h-12 bg-dark-4 px-5 text-white flex gap-2 !important;
-  }
+/* Buttons */
 
-  .shad-button_ghost {
-    @apply flex gap-4 items-center justify-start hover:bg-transparent hover:text-white !important;
-  }
+.shad-button_primary {
+@apply flex gap-2 bg-primary-500 text-white hover:bg-primary-500;
+}
+
+.shad-button_dark_4 {
+@apply flex h-12 gap-2 bg-dark-4 px-5 text-white;
+}
+
+.shad-button_ghost {
+@apply flex items-center justify-start gap-4 hover:bg-transparent hover:text-white;
+}
 }

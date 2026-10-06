@@ -15,13 +15,13 @@ import { toast } from "../ui/use-toast"
 import Loader from "../shared/Loader"
 
 type PostFormProps = {
-    post?: Models.Document;
+    post?: Models.DefaultDocument;
     action: 'Create' | 'Update'
 }
 
 const PostForm = ({ post, action } : PostFormProps) => {
-    const{ mutateAsync: createPost, isLoading: isLoadingCreate } = useCreatePost();
-    const{ mutateAsync: updatePost, isLoading: isLoadingUpdate } = useUpdatePost();
+    const{ mutateAsync: createPost, isPending: isLoadingCreate } = useCreatePost();
+    const{ mutateAsync: updatePost, isPending: isLoadingUpdate } = useUpdatePost();
 
     const navigate = useNavigate();
     const{ user } = useUserContext();
@@ -124,7 +124,7 @@ const PostForm = ({ post, action } : PostFormProps) => {
                 <div className="flex gap-4 items-center justify-end">
                     <Button type="button" className="shad-button_dark_4">Cancel</Button>
                     <Button type="submit" className="shad-button_primary whitespace-nowrap" disabled={isLoadingCreate || isLoadingUpdate}>
-                        {isLoadingCreate || isLoadingUpdate && <Loader />}
+                        {(isLoadingCreate || isLoadingUpdate) && <Loader />}
                         {action} Post
                     </Button>
                 </div>

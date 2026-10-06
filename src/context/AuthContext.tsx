@@ -1,7 +1,11 @@
-import { useNavigate } from "react-router-dom";
 import { createContext, useContext, useEffect, useState } from "react";
 import { IUser } from "@/types";
-import { getCurrentUser } from "@/lib/appwrite/api";
+import {
+  AuthFailureReason,
+  AuthStageError,
+  errorMessage,
+  getCurrentUser,
+} from "@/lib/appwrite/api";
 
 export const INITIAL_USER = {
   id: "",
@@ -12,13 +16,18 @@ export const INITIAL_USER = {
   bio: "",
 };
 
+export type AuthCheckResult =
+  | { ok: true }
+  | { ok: false; reason: AuthFailureReason; message: string };
+
 const INITIAL_STATE = {
   user: INITIAL_USER,
-  isLoading: false,
+  isLoading: true,
   isAuthenticated: false,
   setUser: () => {},
   setIsAuthenticated: () => {},
-  checkAuthUser: async () => false as boolean,
+  checkAuthUser: async () =>
+    ({ ok: false, reason: "error", message: "AuthProvider is missing" }) as AuthCheckResult,
 };
 
 type IContextType = {
@@ -27,54 +36,48 @@ type IContextType = {
   setUser: React.Dispatch<React.SetStateAction<IUser>>;
   isAuthenticated: boolean;
   setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
-  checkAuthUser: () => Promise<boolean>;
+  checkAuthUser: () => Promise<AuthCheckResult>;
 };
 
 const AuthContext = createContext<IContextType>(INITIAL_STATE);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate();
   const [user, setUser] = useState<IUser>(INITIAL_USER);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  // True until the first session check on page load has finished, so private
+  // routes can wait instead of flashing or redirecting too early.
+  const [isLoading, setIsLoading] = useState(true);
 
-  const checkAuthUser = async () => {
+  const checkAuthUser = async (): Promise<AuthCheckResult> => {
     setIsLoading(true);
     try {
-      const currentAccount = await getCurrentUser();
-      if (currentAccount) {
-        setUser({
-          id: currentAccount.$id,
-          name: currentAccount.name,
-          username: currentAccount.username,
-          email: currentAccount.email,
-          imageUrl: currentAccount.imageURL,
-          bio: currentAccount.bio,
-        });
-        setIsAuthenticated(true);
+      const currentUser = await getCurrentUser();
+      setUser({
+        id: currentUser.$id,
+        name: currentUser.name,
+        username: currentUser.username,
+        email: currentUser.email,
+        imageUrl: currentUser.imageURL,
+        bio: currentUser.bio,
+      });
+      setIsAuthenticated(true);
 
-        return true;
-      }
-
-      return false;
+      return { ok: true };
     } catch (error) {
-      console.error(error);
-      return false;
+      setUser(INITIAL_USER);
+      setIsAuthenticated(false);
+
+      if (error instanceof AuthStageError) {
+        return { ok: false, reason: error.reason, message: error.message };
+      }
+      return { ok: false, reason: "error", message: errorMessage(error) };
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    const cookieFallback = localStorage.getItem("cookieFallback");
-    if (
-      cookieFallback === "[]" ||
-      cookieFallback === null ||
-      cookieFallback === undefined
-    ) {
-      navigate("/sign-in");
-    }
-
+    // A guest legitimately gets a 401 here; RootLayout redirects them to /sign-in.
     checkAuthUser();
   }, []);
 
@@ -90,4 +93,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useUserContext = () => useContext(AuthContext);
