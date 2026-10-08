@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { resolveImageUrl } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
@@ -93,7 +94,7 @@ const UpdateProfile = () => {
                   <FormControl>
                     <ProfileUploader
                       fieldChange={field.onChange}
-                      mediaUrl={currentUser.imageURL}
+                      mediaUrl={resolveImageUrl(currentUser.imageURL)}
                     />
                   </FormControl>
                   <FormMessage className="shad-form_message" />

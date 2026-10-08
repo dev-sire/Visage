@@ -1,4 +1,5 @@
 import { Models } from "appwrite";
+import { resolveImageUrl } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
 
@@ -9,7 +10,7 @@ type UserCardProps = {
 const UserCard = ({ user }: UserCardProps) => {
   return (
     <Link to={`/profile/${user.$id}`} className="user-card">
-      <img src={user.imageURL || "/assets/icons/profile-placeholder.svg"} alt="creator" className="rounded-full w-14 h-14" />
+      <img src={resolveImageUrl(user.imageURL) || "/assets/icons/profile-placeholder.svg"} alt="creator" className="rounded-full w-14 h-14" />
       <div className="flex-center flex-col gap-1">
         {user.name === "Aman Shahid" ? (
               <p className="base-medium text-admin-color text-center line-clamp-1">{user.name}{' '}(Dev)</p>) : (

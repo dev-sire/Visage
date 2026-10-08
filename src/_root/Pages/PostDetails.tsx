@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { resolveImageUrl } from "@/lib/utils";
 import { useGetPostById, useGetUserPosts, useDeletePost } from "@/lib/react-query/queriesAndMutations";
 import { multiFormatDateString } from "@/lib/utils";
 import { useUserContext } from "@/context/AuthContext";
@@ -45,7 +46,7 @@ const PostDetails = () => {
       ) : (
         <div className="post_details-card">
           <img
-            src={post?.imageURL}
+            src={resolveImageUrl(post?.imageURL)}
             alt="creator"
             className="post_details-img"
           />
@@ -57,7 +58,7 @@ const PostDetails = () => {
                 className="flex items-center gap-3">
                 <img
                   src={
-                    post?.creator.imageURL ||
+                    resolveImageUrl(post?.creator.imageURL) ||
                     "/assets/icons/profile-placeholder.svg"
                   }
                   alt="creator"

@@ -1,6 +1,6 @@
 import { INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
 import { account, appwriteConfig, avatars, databases, storage } from "./config";
-import { AppwriteException, ID, ImageGravity, Models, Query } from "appwrite";
+import { AppwriteException, ID, Models, Query } from "appwrite";
 
 // ============================================================
 // RELATIONSHIPS
@@ -175,7 +175,7 @@ export async function createPost(post: INewPost) {
         if (!uploadedFile) throw Error;
 
         // Get file url
-        const fileUrl = getFilePreview(uploadedFile.$id);
+        const fileUrl = getFileUrl(uploadedFile.$id);
         if (!fileUrl) {
             await deleteFile(uploadedFile.$id);
             throw Error;
@@ -228,7 +228,7 @@ export async function updatePost(post: IUpdatePost) {
             newFileId = uploadedFile.$id;
 
             // Get file url
-            const fileUrl = getFilePreview(uploadedFile.$id);
+            const fileUrl = getFileUrl(uploadedFile.$id);
             if (!fileUrl) {
                 await deleteFile(uploadedFile.$id);
                 throw Error;
@@ -276,15 +276,13 @@ export async function uploadFile(file: File) {
     }
 }
 
-export function getFilePreview(fileId: string) {
+// Returns the file's /view URL. /preview (resize/quality/gravity) counts as an
+// image transformation, which Appwrite blocks on plans that don't include it.
+export function getFileUrl(fileId: string) {
     try {
-        const fileUrl = storage.getFilePreview({
+        const fileUrl = storage.getFileView({
             bucketId: appwriteConfig.storageId,
             fileId,
-            width: 2000,
-            height: 2000,
-            gravity: ImageGravity.Top,
-            quality: 100,
         });
 
         if (!fileUrl) throw Error;
@@ -468,7 +466,7 @@ export async function updateUser(user: IUpdateUser) {
             const uploadedFile = await uploadFile(user.file[0]);
             if (!uploadedFile) throw Error;
 
-            const fileUrl = getFilePreview(uploadedFile.$id);
+            const fileUrl = getFileUrl(uploadedFile.$id);
             if (!fileUrl) {
                 await deleteFile(uploadedFile.$id);
                 throw Error;

@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
+import { resolveImageUrl } from "@/lib/utils";
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useNavigate } from "react-router-dom"
@@ -88,7 +89,7 @@ const PostForm = ({ post, action } : PostFormProps) => {
                             <FormControl>
                                 <FileUploader 
                                     fieldChange={field.onChange}
-                                    mediaUrl={post?.imageURL}
+                                    mediaUrl={resolveImageUrl(post?.imageURL)}
                                 />
                             </FormControl>
                             <FormMessage className="shad-form_message" />

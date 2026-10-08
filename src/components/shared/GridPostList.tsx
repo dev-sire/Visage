@@ -1,4 +1,5 @@
 import { Models } from "appwrite";
+import { resolveImageUrl } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
 import PostStats from "./PostStats";
@@ -22,7 +23,7 @@ const GridPostList = ({
         <li key={post.$id} className="relative min-w-80 h-80">
           <Link to={`/posts/${post.$id}`} className="grid-post_link">
             <img
-              src={post.imageURL}
+              src={resolveImageUrl(post.imageURL)}
               alt="post"
               className="h-full w-full object-cover"
             />
@@ -33,16 +34,16 @@ const GridPostList = ({
               <div className="flex items-center justify-start gap-2 flex-1">
                 <img
                   src={
-                    post.creator.imageURL ||
+                    resolveImageUrl(post.creator?.imageURL) ||
                     "/assets/icons/profile-placeholder.svg"
                   }
                   alt="creator"
                   className="w-8 h-8 rounded-full"
                 />
-                {post.creator.name === "Aman Shahid" ? (
+                {post.creator?.name === "Aman Shahid" ? (
                     <p className="line-clamp-1 text-admin-color">Aman Shahid (Dev)</p>
                 ) : (
-                    <p className="line-clamp-1">{post.creator.name}</p>
+                    <p className="line-clamp-1">{post.creator?.name}</p>
                 ) }
               </div>
             )}

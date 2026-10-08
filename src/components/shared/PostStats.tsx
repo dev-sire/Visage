@@ -17,7 +17,11 @@ type PostStatsProps = {
 
 const PostStats = ({ post, userId }: PostStatsProps) => {
   const location = useLocation();
-  const likesList = post?.likes.map((user: Models.DefaultDocument) => user.$id);
+  // `likes` is only present when the query asked for it (see POST_SELECT in api.ts).
+  const likesLoaded = Array.isArray(post?.likes);
+  const likesList: string[] = (post?.likes ?? []).map(
+    (user: Models.DefaultDocument | string) => (typeof user === "string" ? user : user.$id)
+  );
 
   const [likes, setLikes] = useState(likesList);
   const [isSaved, setIsSaved] = useState(false);
@@ -28,8 +32,9 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
 
   const { data: currentUser } = useGetCurrentUser();
 
-  const savedPostRecord = currentUser?.save.find(
-    (record: Models.DefaultDocument) => record.post.$id === post?.$id
+  const savedPostRecord = currentUser?.save?.find(
+    (record: Models.DefaultDocument) =>
+      (typeof record.post === "string" ? record.post : record.post?.$id) === post?.$id
   );
 
   useEffect(() => {
@@ -40,6 +45,9 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
     e: React.MouseEvent<HTMLImageElement, MouseEvent>
   ) => {
     e.stopPropagation();
+
+    // Never write a likes list we haven't actually loaded: it would replace the real one.
+    if (!likesLoaded) return;
 
     let likesArray = [...likes];
 

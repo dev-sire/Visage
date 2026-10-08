@@ -1,4 +1,5 @@
 import { Models } from "appwrite";
+import { resolveImageUrl } from "@/lib/utils";
 import { Link } from "react-router-dom";
 
 // import { PostStats } from "@/components/shared";
@@ -22,7 +23,7 @@ const PostCard = ({ post }: PostCardProps) => {
           <Link to={`/profile/${post.creator.$id}`}>
             <img
               src={
-                post.creator?.imageURL ||
+                resolveImageUrl(post.creator?.imageURL) ||
                 "/assets/icons/profile-placeholder.svg"
               }
               alt="creator"
@@ -76,7 +77,7 @@ const PostCard = ({ post }: PostCardProps) => {
         </div>
 
         <img
-          src={post.imageURL || "/assets/icons/profile-placeholder.svg"}
+          src={resolveImageUrl(post.imageURL) || "/assets/icons/profile-placeholder.svg"}
           alt="post image"
           className="post-card_img"
         />

@@ -1,4 +1,5 @@
 import { Route, Routes, Link, Outlet, useParams, useLocation} from "react-router-dom";
+import { resolveImageUrl } from "@/lib/utils";
 import { useUserContext } from "@/context/AuthContext";
 import { useGetUserById } from "@/lib/react-query/queriesAndMutations";
 import Loader from "@/components/shared/Loader";
@@ -43,7 +44,7 @@ const Profile = () => {
         <div className="flex xl:flex-row flex-col max-xl:items-center flex-1 gap-7">
           <img
             src={
-              currentUser.imageURL || "/assets/icons/profile-placeholder.svg"
+              resolveImageUrl(currentUser.imageURL) || "/assets/icons/profile-placeholder.svg"
             }
             alt="profile"
             className="w-28 h-28 lg:h-36 lg:w-36 rounded-full"
@@ -64,7 +65,7 @@ const Profile = () => {
             </div>
 
             <div className="flex gap-8 mt-10 items-center justify-center xl:justify-start flex-wrap z-20">
-              <StatBlock value={currentUser.posts.length} label="Posts" />
+              <StatBlock value={(currentUser.posts ?? []).length} label="Posts" />
               <StatBlock value={20} label="Followers" />
               <StatBlock value={20} label="Following" />
             </div>
@@ -135,7 +136,7 @@ const Profile = () => {
       <Routes>
         <Route
           index
-          element={<GridPostList posts={currentUser.posts} showUser={false} />}
+          element={<GridPostList posts={currentUser.posts ?? []} showUser={false} />}
         />
         {currentUser.$id === user.id && (
           <Route path="/liked-posts" element={<LikedPosts />} />

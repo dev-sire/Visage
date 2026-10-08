@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { resolveImageUrl } from "@/lib/utils";
 import { IUser } from "@/types";
 import {
   AuthFailureReason,
@@ -57,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name: currentUser.name,
         username: currentUser.username,
         email: currentUser.email,
-        imageUrl: currentUser.imageURL,
+        imageUrl: resolveImageUrl(currentUser.imageURL),
         bio: currentUser.bio,
       });
       setIsAuthenticated(true);

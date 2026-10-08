@@ -6,11 +6,12 @@ import Loader from "@/components/shared/Loader";
 const Saved = () => {
   const { data: currentUser } = useGetCurrentUser();
 
-  const savePosts = currentUser?.save
+  const savePosts = (currentUser?.save ?? [])
+    .filter((savePost: Models.DefaultDocument) => savePost.post && typeof savePost.post === "object")
     .map((savePost: Models.DefaultDocument) => ({
       ...savePost.post,
       creator: {
-        imageURL: currentUser.imageURL,
+        imageURL: currentUser?.imageURL,
       },
     }))
     .reverse();
