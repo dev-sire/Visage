@@ -1,6 +1,6 @@
 import { INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
 import { account, appwriteConfig, avatars, databases, storage } from "./config";
-import { AppwriteException, ID, Models, Query } from "appwrite";
+import { AppwriteException, ID, Models, Permission, Query, Role } from "appwrite";
 
 // ============================================================
 // RELATIONSHIPS
@@ -501,4 +501,96 @@ export async function updateUser(user: IUpdateUser) {
     } catch (error) {
         console.log(error);
     }
+}
+
+// ============================================================
+// COMMENTS
+// ============================================================
+// Collection `comments` (see scripts/setup-comments-collection.mjs):
+//   postId, userId (users-collection document id), parentId (set on replies,
+//   always the id of the top-level comment, so threads are two levels deep),
+//   content, isDeleted. Authors are looked up from the users collection at read
+//   time so avatars and names never go stale.
+
+export type INewComment = {
+    postId: string;
+    userId: string;
+    content: string;
+    parentId?: string;
+};
+
+export type CommentDoc = Models.DefaultDocument & { author?: Models.DefaultDocument };
+
+export async function getPostComments(postId: string): Promise<CommentDoc[]> {
+    const result = await databases.listDocuments({
+        databaseId: appwriteConfig.databaseId,
+        collectionId: appwriteConfig.commentCollectionId,
+        queries: [Query.equal("postId", postId), Query.orderAsc("$createdAt"), Query.limit(500)],
+    });
+
+    const userIds = [...new Set(result.documents.map((comment) => comment.userId as string))];
+    const chunks: string[][] = [];
+    for (let i = 0; i < userIds.length; i += 100) chunks.push(userIds.slice(i, i + 100));
+
+    const authorLists = await Promise.all(
+        chunks.map((ids) =>
+            databases.listDocuments({
+                databaseId: appwriteConfig.databaseId,
+                collectionId: appwriteConfig.userCollectionId,
+                queries: [Query.equal("$id", ids), Query.limit(100)],
+            })
+        )
+    );
+
+    const authors = new Map<string, Models.DefaultDocument>();
+    authorLists.forEach((list) => list.documents.forEach((author) => authors.set(author.$id, author)));
+
+    return result.documents.map((comment) => ({ ...comment, author: authors.get(comment.userId) }));
+}
+
+// These throw (unlike the older post helpers) so the UI can show the real reason.
+export async function createComment(comment: INewComment) {
+    const content = comment.content.trim();
+    if (!content) throw new Error("A comment can't be empty.");
+
+    // Only the author may edit or delete their own comment.
+    const currentAccount = await account.get();
+
+    return databases.createDocument({
+        databaseId: appwriteConfig.databaseId,
+        collectionId: appwriteConfig.commentCollectionId,
+        documentId: ID.unique(),
+        data: {
+            postId: comment.postId,
+            userId: comment.userId,
+            content,
+            ...(comment.parentId ? { parentId: comment.parentId } : {}),
+        },
+        permissions: [
+            Permission.update(Role.user(currentAccount.$id)),
+            Permission.delete(Role.user(currentAccount.$id)),
+        ],
+    });
+}
+
+/**
+ * A comment that has replies is blanked (so the thread stays readable) instead
+ * of removed; one without replies is deleted outright.
+ */
+export async function deleteComment({ commentId, hasReplies }: { commentId: string; hasReplies: boolean }) {
+    if (hasReplies) {
+        return databases.updateDocument({
+            databaseId: appwriteConfig.databaseId,
+            collectionId: appwriteConfig.commentCollectionId,
+            documentId: commentId,
+            data: { content: "", isDeleted: true },
+        });
+    }
+
+    await databases.deleteDocument({
+        databaseId: appwriteConfig.databaseId,
+        collectionId: appwriteConfig.commentCollectionId,
+        documentId: commentId,
+    });
+    return { status: "ok" };
 }

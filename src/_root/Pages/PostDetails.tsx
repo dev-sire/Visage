@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { resolveImageUrl } from "@/lib/utils";
 import { useGetPostById, useGetUserPosts, useDeletePost } from "@/lib/react-query/queriesAndMutations";
@@ -6,6 +7,8 @@ import { useUserContext } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import Loader from "@/components/shared/Loader";
 import PostStats from "@/components/shared/PostStats";
+import Comments from "@/components/shared/Comments";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import GridPostList from "@/components/shared/GridPostList";
 
 const PostDetails = () => {
@@ -16,11 +19,12 @@ const PostDetails = () => {
   const { data: post, isLoading } = useGetPostById(id);
   const { data: userPosts, isLoading: isUserPostLoading } = useGetUserPosts(post?.creator.$id);
   const { mutate: deletePost } = useDeletePost();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const relatedPosts = userPosts?.documents.filter((userPost) => userPost.$id !== id);
 
   const handleDeletePost = () => {
-    deletePost({ postId: id, imageId: post?.imageId });
+    deletePost({ postId: id, imageId: post?.imageID });
     navigate(-1);
   };
 
@@ -97,7 +101,7 @@ const PostDetails = () => {
                     height={24}
                   />
                 </Link>
-                <Button onClick={handleDeletePost} variant="ghost" className={`ost_details-delete_btn ${
+                <Button onClick={() => setConfirmingDelete(true)} variant="ghost" className={`ost_details-delete_btn ${
                     user.id !== post?.creator.$id && "hidden"
                   }`}>
                   <img src="/assets/icons/delete.svg" alt="delete" width={24} height={24} />
@@ -127,6 +131,13 @@ const PostDetails = () => {
         </div>
       )}
 
+      {post && (
+        <div className="w-full max-w-5xl">
+          <hr className="border w-full border-dark-4/80 mb-10" />
+          <Comments post={post} />
+        </div>
+      )}
+
       <div className="w-full max-w-5xl">
         <hr className="border w-full border-dark-4/80" />
 
@@ -139,6 +150,16 @@ const PostDetails = () => {
           <GridPostList posts={relatedPosts} />
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        onOpenChange={setConfirmingDelete}
+        title="Delete this post?"
+        description="The post and its photo will be permanently removed. This can't be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={handleDeletePost}
+      />
     </div>
   );
 };

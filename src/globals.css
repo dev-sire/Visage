@@ -74,6 +74,18 @@ BASE
 body {
 @apply min-h-screen bg-dark-1 font-inter text-white;
 }
+
+/* Tailwind v4's reset leaves buttons with the default arrow cursor (v3 made them
+   pointers). Restore it for every enabled button. */
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"]:disabled {
+  cursor: not-allowed;
+}
 }
 
 /* ============================================================
@@ -373,32 +385,32 @@ SHADCN COMPONENTS
 /* Form */
 
 .shad-form_label {
-@apply text-white;
+@apply text-white!;
 }
 
 .shad-form_message {
-@apply text-red;
+@apply text-red!;
 }
 
 .shad-input {
-@apply h-12 border-none bg-dark-2 placeholder:text-dark-3 ring-offset-light-3 focus-visible:ring-1 focus-visible:ring-offset-1;
+@apply h-12! border-none! bg-dark-2! placeholder:text-dark-3! ring-offset-light-3! focus-visible:ring-1! focus-visible:ring-offset-1!;
 }
 
 .shad-textarea {
-@apply h-36 rounded-xl border-none bg-dark-2 ring-offset-light-3 focus-visible:ring-1 focus-visible:ring-offset-1;
+@apply h-36! rounded-xl! border-none! bg-dark-2! ring-offset-light-3! focus-visible:ring-1! focus-visible:ring-offset-1!;
 }
 
 /* Buttons */
 
 .shad-button_primary {
-@apply flex gap-2 bg-primary-500 text-white hover:bg-primary-500;
+@apply flex! gap-2! bg-primary-500! text-white! hover:bg-primary-500!;
 }
 
 .shad-button_dark_4 {
-@apply flex h-12 gap-2 bg-dark-4 px-5 text-white;
+@apply flex! h-12! gap-2! bg-dark-4! px-5! text-white!;
 }
 
 .shad-button_ghost {
-@apply flex items-center justify-start gap-4 hover:bg-transparent hover:text-white;
+@apply flex! items-center! justify-start! gap-4! hover:bg-transparent! hover:text-white!;
 }
 }
