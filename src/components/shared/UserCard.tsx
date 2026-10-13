@@ -2,12 +2,16 @@ import { Models } from "appwrite";
 import { resolveImageUrl } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
+import FollowButton from "@/components/shared/FollowButton";
+import { useUserContext } from "@/context/AuthContext";
 
 type UserCardProps = {
   user: Models.DefaultDocument;
 };
 
 const UserCard = ({ user }: UserCardProps) => {
+  const { user: currentUser } = useUserContext();
+
   return (
     <Link to={`/profile/${user.$id}`} className="user-card">
       <img src={resolveImageUrl(user.imageURL) || "/assets/icons/profile-placeholder.svg"} alt="creator" className="rounded-full w-14 h-14" />
@@ -18,7 +22,11 @@ const UserCard = ({ user }: UserCardProps) => {
         )}
         <p className="small-regular text-light-3 text-center line-clamp-1"> @{user.username}</p>
       </div>
-      <Button type="button" size="sm" className="shad-button_primary px-5">Profile</Button>
+      {user.$id === currentUser.id ? (
+        <Button type="button" size="sm" className="shad-button_primary px-5">Profile</Button>
+      ) : (
+        <FollowButton targetId={user.$id} insideLink className="px-5" />
+      )}
     </Link>
   );
 };

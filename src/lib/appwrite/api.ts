@@ -594,3 +594,179 @@ export async function deleteComment({ commentId, hasReplies }: { commentId: stri
     });
     return { status: "ok" };
 }
+
+// ============================================================
+// FOLLOWS
+// ============================================================
+// Collection `follows` (see scripts/setup-follows-collection.mjs):
+//   followerId, followingId: ids of documents in the users collection.
+// A unique index on the pair means a user can never follow someone twice.
+
+export async function getFollowing(userId: string): Promise<Models.DefaultDocument[]> {
+    const follows: Models.DefaultDocument[] = [];
+    let cursor: string | undefined;
+
+    // Pages of 500 (Appwrite's per-query value limit); newest follows first.
+    for (let page = 0; page < 5; page++) {
+        const queries = [Query.equal("followerId", userId), Query.orderDesc("$createdAt"), Query.limit(500)];
+        if (cursor) queries.push(Query.cursorAfter(cursor));
+
+        const result = await databases.listDocuments({
+            databaseId: appwriteConfig.databaseId,
+            collectionId: appwriteConfig.followCollectionId,
+            queries,
+        });
+
+        follows.push(...result.documents);
+        if (result.documents.length < 500) break;
+        cursor = result.documents[result.documents.length - 1].$id;
+    }
+
+    return follows;
+}
+
+export async function getFollowCounts(userId: string) {
+    const count = async (field: "followerId" | "followingId") => {
+        const result = await databases.listDocuments({
+            databaseId: appwriteConfig.databaseId,
+            collectionId: appwriteConfig.followCollectionId,
+            queries: [Query.equal(field, userId), Query.limit(1)],
+        });
+        return result.total;
+    };
+
+    const [followers, following] = await Promise.all([count("followingId"), count("followerId")]);
+    return { followers, following };
+}
+
+export async function followUser({ followerId, followingId }: { followerId: string; followingId: string }) {
+    if (followerId === followingId) throw new Error("You can't follow yourself.");
+
+    // Only the follower may remove the follow again.
+    const currentAccount = await account.get();
+
+    try {
+        return await databases.createDocument({
+            databaseId: appwriteConfig.databaseId,
+            collectionId: appwriteConfig.followCollectionId,
+            documentId: ID.unique(),
+            data: { followerId, followingId },
+            permissions: [Permission.delete(Role.user(currentAccount.$id))],
+        });
+    } catch (error) {
+        // The unique index rejects a duplicate (e.g. a double click or a second
+        // tab): that just means we already follow them, so return the existing one.
+        if (error instanceof AppwriteException && error.code === 409) {
+            const existing = await databases.listDocuments({
+                databaseId: appwriteConfig.databaseId,
+                collectionId: appwriteConfig.followCollectionId,
+                queries: [Query.equal("followerId", followerId), Query.equal("followingId", followingId), Query.limit(1)],
+            });
+            if (existing.documents[0]) return existing.documents[0];
+        }
+        throw error;
+    }
+}
+
+export async function unfollowUser(followId: string) {
+    await databases.deleteDocument({
+        databaseId: appwriteConfig.databaseId,
+        collectionId: appwriteConfig.followCollectionId,
+        documentId: followId,
+    });
+    return { status: "ok" };
+}
+
+// ============================================================
+// HOME FEED
+// ============================================================
+// Two sections, one continuous scroll:
+//   1. "following": posts by people you follow (and your own), newest first
+//   2. "suggested": everyone else's posts, newest first
+// Suggested posts are filtered on the client instead of with a server-side
+// "creator is not in ..." query: it needs no assumptions about querying
+// relationship attributes, and Appwrite caps a query at 500 values anyway.
+
+export type FeedSection = "following" | "suggested";
+export type FeedPageParam = { section: FeedSection; cursor: string | null };
+export type FeedPage = {
+    section: FeedSection;
+    documents: Models.DefaultDocument[];
+    next: FeedPageParam | null;
+};
+
+export const FEED_PAGE_SIZE = 10;
+const SUGGESTED_SCAN_SIZE = 25;
+const SUGGESTED_MAX_SCANS = 4;
+const MAX_FEED_AUTHORS = 500;
+
+export async function getFeedPage({
+    userId,
+    followingIds,
+    param,
+}: {
+    userId: string;
+    followingIds: string[];
+    param: FeedPageParam;
+}): Promise<FeedPage> {
+    // Your own posts count as part of "following" so a new post shows up at once.
+    const authorIds = [...new Set([userId, ...followingIds])].slice(0, MAX_FEED_AUTHORS);
+
+    if (param.section === "following") {
+        const queries = [
+            Query.equal("creator", authorIds),
+            Query.orderDesc("$createdAt"),
+            Query.limit(FEED_PAGE_SIZE),
+            ...POST_SELECT,
+        ];
+        if (param.cursor) queries.push(Query.cursorAfter(param.cursor));
+
+        const result = await databases.listDocuments({
+            databaseId: appwriteConfig.databaseId,
+            collectionId: appwriteConfig.postCollectionId,
+            queries,
+        });
+
+        const documents = result.documents;
+        const last = documents[documents.length - 1];
+        return {
+            section: "following",
+            documents,
+            next:
+                documents.length === FEED_PAGE_SIZE && last
+                    ? { section: "following", cursor: last.$id }
+                    : { section: "suggested", cursor: null },
+        };
+    }
+
+    const authors = new Set(authorIds);
+    const documents: Models.DefaultDocument[] = [];
+    let cursor = param.cursor;
+    let exhausted = false;
+
+    for (let scan = 0; scan < SUGGESTED_MAX_SCANS && documents.length < FEED_PAGE_SIZE && !exhausted; scan++) {
+        const queries = [Query.orderDesc("$createdAt"), Query.limit(SUGGESTED_SCAN_SIZE), ...POST_SELECT];
+        if (cursor) queries.push(Query.cursorAfter(cursor));
+
+        const result = await databases.listDocuments({
+            databaseId: appwriteConfig.databaseId,
+            collectionId: appwriteConfig.postCollectionId,
+            queries,
+        });
+
+        const batch = result.documents;
+        if (batch.length < SUGGESTED_SCAN_SIZE) exhausted = true;
+        if (batch.length > 0) cursor = batch[batch.length - 1].$id;
+
+        for (const post of batch) {
+            const creatorId = typeof post.creator === "string" ? post.creator : post.creator?.$id;
+            if (!authors.has(creatorId)) documents.push(post);
+        }
+    }
+
+    return {
+        section: "suggested",
+        documents,
+        next: exhausted ? null : { section: "suggested", cursor },
+    };
+}

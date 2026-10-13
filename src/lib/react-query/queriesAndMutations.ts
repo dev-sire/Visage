@@ -1,8 +1,20 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery, type QueryClient } from "@tanstack/react-query";
+import { Models } from "appwrite";
 import { createComment, createPost, createUserAccount, deleteComment, deletePost, deleteSavedPost, getCurrentUserWithRelations, getInfinitePosts, getPostById, getPostComments, getRecentPosts, getUserById, getUserPosts, getUsers, likePost, savePost, searchPosts, signInAccount, signOutAccount, updatePost, updateUser } from "../appwrite/api";
-import { INewComment } from "../appwrite/api";
+import { FeedPageParam, followUser, getFeedPage, getFollowCounts, getFollowing, INewComment, unfollowUser } from "../appwrite/api";
 import { INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
 import { QUERY_KEYS } from "./queryKeys";
+
+// Home now renders GET_HOME_FEED. Keep it fresh wherever the old recent-posts
+// query was invalidated. `refetch: false` only marks it stale (used for likes and
+// saves, where PostStats already shows the new state locally).
+const invalidateFeeds = (queryClient: QueryClient, refetch = true) => {
+  queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_RECENT_POSTS] });
+  queryClient.invalidateQueries({
+    queryKey: [QUERY_KEYS.GET_HOME_FEED],
+    refetchType: refetch ? "active" : "none",
+  });
+};
 
 export const useCreateUserAccount = () => {
     return useMutation({
@@ -25,9 +37,7 @@ export const useCreatePost = () => {
   return useMutation({
     mutationFn: (post: INewPost) => createPost(post),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.GET_RECENT_POSTS]
-      })
+      invalidateFeeds(queryClient);
     }
   });
 };
@@ -52,9 +62,7 @@ export const useLikePost = () => {
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GET_POST_BY_ID, data?.$id]
       })
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.GET_RECENT_POSTS]
-      })
+      invalidateFeeds(queryClient, false);
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GET_POSTS]
       })
@@ -70,9 +78,7 @@ export const useSavePost = () => {
   return useMutation({
     mutationFn: ({postId, userId} : { postId: string, userId: string}) => savePost(postId, userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.GET_RECENT_POSTS]
-      })
+      invalidateFeeds(queryClient, false);
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GET_POSTS]
       })
@@ -88,9 +94,7 @@ export const useDeleteSavedPost = () => {
   return useMutation({
     mutationFn: (savedRecordId: string) => deleteSavedPost(savedRecordId),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.GET_RECENT_POSTS]
-      })
+      invalidateFeeds(queryClient, false);
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GET_POSTS]
       })
@@ -128,6 +132,7 @@ export const useUpdatePost = () => {
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GET_POST_BY_ID, data?.$id]
       })
+      invalidateFeeds(queryClient);
     }
   })
 };
@@ -136,9 +141,7 @@ export const useDeletePost = () => {
   return useMutation({
     mutationFn: ({ postId, imageId }: { postId?: string; imageId: string }) => deletePost(postId, imageId),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
-      });
+      invalidateFeeds(queryClient);
     },
   });
 };
@@ -213,5 +216,129 @@ export const useDeleteComment = (postId: string) => {
         queryKey: [QUERY_KEYS.GET_POST_COMMENTS, postId],
       });
     },
+  });
+};
+
+// ------------------------------------------------------------
+// Follows
+// ------------------------------------------------------------
+
+type FollowCounts = { followers: number; following: number };
+
+const myFollowsKey = (userId: string) => [QUERY_KEYS.GET_MY_FOLLOWS, userId];
+
+/** Every follow document where `userId` is the follower. Shared by buttons and the feed. */
+export const useGetMyFollows = (userId?: string) => {
+  return useQuery({
+    queryKey: myFollowsKey(userId ?? ""),
+    queryFn: () => getFollowing(userId as string),
+    enabled: !!userId,
+    staleTime: 60_000,
+  });
+};
+
+export const useGetFollowCounts = (userId?: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_FOLLOW_COUNTS, userId],
+    queryFn: () => getFollowCounts(userId as string),
+    enabled: !!userId,
+  });
+};
+
+const adjustCounts = (queryClient: QueryClient, currentUserId: string, targetId: string, delta: number) => {
+  queryClient.setQueryData<FollowCounts>([QUERY_KEYS.GET_FOLLOW_COUNTS, targetId], (old) =>
+    old && { ...old, followers: Math.max(0, old.followers + delta) }
+  );
+  queryClient.setQueryData<FollowCounts>([QUERY_KEYS.GET_FOLLOW_COUNTS, currentUserId], (old) =>
+    old && { ...old, following: Math.max(0, old.following + delta) }
+  );
+};
+
+const resyncFollows = (queryClient: QueryClient, currentUserId: string, targetId: string) => {
+  queryClient.invalidateQueries({ queryKey: myFollowsKey(currentUserId) });
+  queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_FOLLOW_COUNTS, targetId] });
+  queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_FOLLOW_COUNTS, currentUserId] });
+  // The feed's contents depend on who you follow.
+  queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_HOME_FEED] });
+};
+
+// Both mutations update the UI immediately and roll back if the server refuses.
+export const useFollowUser = (currentUserId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (targetId: string) => followUser({ followerId: currentUserId, followingId: targetId }),
+    onMutate: async (targetId) => {
+      await queryClient.cancelQueries({ queryKey: myFollowsKey(currentUserId) });
+      const previous = queryClient.getQueryData<Models.DefaultDocument[]>(myFollowsKey(currentUserId));
+
+      const pending = { $id: `pending-${targetId}`, followerId: currentUserId, followingId: targetId } as unknown as Models.DefaultDocument;
+      queryClient.setQueryData<Models.DefaultDocument[]>(myFollowsKey(currentUserId), (old = []) => [pending, ...old]);
+      adjustCounts(queryClient, currentUserId, targetId, 1);
+
+      return { previous };
+    },
+    onSuccess: (created, targetId) => {
+      // Swap the placeholder for the real document so Unfollow has the right id.
+      queryClient.setQueryData<Models.DefaultDocument[]>(myFollowsKey(currentUserId), (old = []) =>
+        old.map((follow) => (follow.$id === `pending-${targetId}` ? created : follow))
+      );
+    },
+    onError: (_error, _targetId, context) => {
+      queryClient.setQueryData(myFollowsKey(currentUserId), context?.previous);
+    },
+    onSettled: (_data, _error, targetId) => resyncFollows(queryClient, currentUserId, targetId),
+  });
+};
+
+export const useUnfollowUser = (currentUserId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ followId }: { targetId: string; followId: string }) => unfollowUser(followId),
+    onMutate: async ({ targetId, followId }) => {
+      await queryClient.cancelQueries({ queryKey: myFollowsKey(currentUserId) });
+      const previous = queryClient.getQueryData<Models.DefaultDocument[]>(myFollowsKey(currentUserId));
+
+      queryClient.setQueryData<Models.DefaultDocument[]>(myFollowsKey(currentUserId), (old = []) =>
+        old.filter((follow) => follow.$id !== followId)
+      );
+      adjustCounts(queryClient, currentUserId, targetId, -1);
+
+      return { previous };
+    },
+    onError: (_error, _vars, context) => {
+      queryClient.setQueryData(myFollowsKey(currentUserId), context?.previous);
+    },
+    onSettled: (_data, _error, { targetId }) => resyncFollows(queryClient, currentUserId, targetId),
+  });
+};
+
+// ------------------------------------------------------------
+// Home feed: people you follow first, then suggested posts
+// ------------------------------------------------------------
+
+export const useGetHomeFeed = (userId?: string) => {
+  const queryClient = useQueryClient();
+
+  return useInfiniteQuery({
+    queryKey: [QUERY_KEYS.GET_HOME_FEED, userId],
+    enabled: !!userId,
+    initialPageParam: { section: "following", cursor: null } as FeedPageParam,
+    queryFn: async ({ pageParam }) => {
+      // fetchQuery (unlike ensureQueryData) refetches when the follow list was invalidated.
+      const follows = await queryClient.fetchQuery({
+        queryKey: myFollowsKey(userId as string),
+        queryFn: () => getFollowing(userId as string),
+        staleTime: 60_000,
+      });
+
+      return getFeedPage({
+        userId: userId as string,
+        followingIds: follows.map((follow) => follow.followingId as string),
+        param: pageParam,
+      });
+    },
+    getNextPageParam: (lastPage) => lastPage.next ?? undefined,
   });
 };

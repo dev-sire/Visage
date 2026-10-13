@@ -9,6 +9,7 @@ export const appwriteConfig = {
     postCollectionId: import.meta.env.VITE_APPWRITE_POSTS_COLLECTION_ID,
     saveCollectionId: import.meta.env.VITE_APPWRITE_SAVES_COLLECTION_ID,
     commentCollectionId: import.meta.env.VITE_APPWRITE_COMMENTS_COLLECTION_ID,
+    followCollectionId: import.meta.env.VITE_APPWRITE_FOLLOWS_COLLECTION_ID,
 }
 
 // Fail loudly (once, at startup) if an env var didn't make it into the bundle.
