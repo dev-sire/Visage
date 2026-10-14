@@ -595,6 +595,89 @@ export async function deleteComment({ commentId, hasReplies }: { commentId: stri
     return { status: "ok" };
 }
 
+// ------------------------------------------------------------
+// Comment counts (the number next to the comment icon on every post)
+// ------------------------------------------------------------
+// Every PostStats asks for its own post's count, but all the cards that render
+// together share ONE request: asks made within a few milliseconds are collected
+// and answered by a single query for all of those posts. Replies count; comments
+// that were deleted (and only remain as a placeholder) don't, matching the
+// "Comments (n)" heading on the post page.
+
+type CountWaiter = { resolve: (count: number) => void; reject: (error: unknown) => void };
+
+const COUNT_BATCH_WINDOW_MS = 20;
+const COUNT_POSTS_PER_REQUEST = 100;
+const COUNT_PAGE_SIZE = 1000;
+const COUNT_MAX_PAGES = 20;
+
+const countWaiters = new Map<string, CountWaiter[]>();
+let countTimer: ReturnType<typeof setTimeout> | undefined;
+
+async function countCommentsFor(postIds: string[]): Promise<Map<string, number>> {
+    const counts = new Map<string, number>(postIds.map((id) => [id, 0]));
+    let cursor: string | undefined;
+
+    for (let page = 0; page < COUNT_MAX_PAGES; page++) {
+        const queries = [
+            Query.equal("postId", postIds),
+            Query.select(["postId", "isDeleted"]),
+            Query.orderAsc("$createdAt"),
+            Query.limit(COUNT_PAGE_SIZE),
+        ];
+        if (cursor) queries.push(Query.cursorAfter(cursor));
+
+        const result = await databases.listDocuments({
+            databaseId: appwriteConfig.databaseId,
+            collectionId: appwriteConfig.commentCollectionId,
+            queries,
+        });
+
+        for (const comment of result.documents) {
+            if (!comment.isDeleted) counts.set(comment.postId, (counts.get(comment.postId) ?? 0) + 1);
+        }
+
+        if (result.documents.length < COUNT_PAGE_SIZE) break;
+        cursor = result.documents[result.documents.length - 1].$id;
+    }
+
+    return counts;
+}
+
+async function flushCommentCounts() {
+    countTimer = undefined;
+    const waiting = new Map(countWaiters);
+    countWaiters.clear();
+
+    const postIds = [...waiting.keys()];
+    const chunks: string[][] = [];
+    for (let i = 0; i < postIds.length; i += COUNT_POSTS_PER_REQUEST) {
+        chunks.push(postIds.slice(i, i + COUNT_POSTS_PER_REQUEST));
+    }
+
+    // One failing chunk only fails its own posts.
+    await Promise.all(
+        chunks.map(async (chunk) => {
+            try {
+                const counts = await countCommentsFor(chunk);
+                chunk.forEach((id) => waiting.get(id)?.forEach((w) => w.resolve(counts.get(id) ?? 0)));
+            } catch (error) {
+                chunk.forEach((id) => waiting.get(id)?.forEach((w) => w.reject(error)));
+            }
+        })
+    );
+}
+
+export function getCommentCount(postId: string): Promise<number> {
+    return new Promise<number>((resolve, reject) => {
+        const waiters = countWaiters.get(postId) ?? [];
+        waiters.push({ resolve, reject });
+        countWaiters.set(postId, waiters);
+
+        if (countTimer === undefined) countTimer = setTimeout(flushCommentCounts, COUNT_BATCH_WINDOW_MS);
+    });
+}
+
 // ============================================================
 // FOLLOWS
 // ============================================================

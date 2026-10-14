@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery, type QueryClient } from "@tanstack/react-query";
 import { Models } from "appwrite";
 import { createComment, createPost, createUserAccount, deleteComment, deletePost, deleteSavedPost, getCurrentUserWithRelations, getInfinitePosts, getPostById, getPostComments, getRecentPosts, getUserById, getUserPosts, getUsers, likePost, savePost, searchPosts, signInAccount, signOutAccount, updatePost, updateUser } from "../appwrite/api";
-import { FeedPageParam, followUser, getFeedPage, getFollowCounts, getFollowing, INewComment, unfollowUser } from "../appwrite/api";
+import { FeedPageParam, followUser, getCommentCount, getFeedPage, getFollowCounts, getFollowing, INewComment, unfollowUser } from "../appwrite/api";
 import { INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
 import { QUERY_KEYS } from "./queryKeys";
 
@@ -195,6 +195,15 @@ export const useGetPostComments = (postId?: string) => {
   });
 };
 
+export const useGetCommentCount = (postId?: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_COMMENT_COUNT, postId],
+    queryFn: () => getCommentCount(postId as string),
+    enabled: !!postId,
+    staleTime: 30_000,
+  });
+};
+
 export const useCreateComment = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -202,6 +211,9 @@ export const useCreateComment = () => {
     onSuccess: (_data, comment) => {
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GET_POST_COMMENTS, comment.postId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_COMMENT_COUNT, comment.postId],
       });
     },
   });
@@ -214,6 +226,9 @@ export const useDeleteComment = (postId: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GET_POST_COMMENTS, postId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_COMMENT_COUNT, postId],
       });
     },
   });

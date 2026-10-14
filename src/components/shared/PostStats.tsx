@@ -7,6 +7,7 @@ import {
   useLikePost,
   useSavePost,
   useDeleteSavedPost,
+  useGetCommentCount,
   useGetCurrentUser,
 } from "@/lib/react-query/queriesAndMutations";
 
@@ -25,6 +26,9 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
 
   const [likes, setLikes] = useState(likesList);
   const [isSaved, setIsSaved] = useState(false);
+
+  // Shown once loaded (never a wrong "0" while loading); cards on screen share one request.
+  const { data: commentCount } = useGetCommentCount(post?.$id);
 
   const { mutate: likePost } = useLikePost();
   const { mutate: savePost } = useSavePost();
@@ -107,6 +111,9 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
             className="flex gap-2"
             onClick={(e) => e.stopPropagation()}>
             <img src="/assets/icons/comment.svg" alt="comments" width={20} height={20} />
+            {commentCount !== undefined && (
+              <p className="small-medium lg:base-medium">{commentCount}</p>
+            )}
           </Link>
         )}
       </div>
